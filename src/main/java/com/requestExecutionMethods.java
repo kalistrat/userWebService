@@ -1,10 +1,14 @@
 package com;
 
+import java.io.IOException;
+import java.net.Socket;
 import java.security.MessageDigest;
 import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by kalistrat on 13.03.2018.
@@ -70,6 +74,61 @@ public class requestExecutionMethods {
             return hexString.toString();
         } catch(Exception ex){
             throw new RuntimeException(ex);
+        }
+    }
+
+    public static List<String> GetListFromString(String DevidedString,String Devider){
+        List<String> StrPieces = new ArrayList<String>();
+        int k = 0;
+        String iDevidedString = DevidedString;
+
+        if (DevidedString.contains(Devider)) {
+
+            while (!iDevidedString.equals("")) {
+                int Pos = iDevidedString.indexOf(Devider);
+                StrPieces.add(iDevidedString.substring(0, Pos));
+                iDevidedString = iDevidedString.substring(Pos + 1);
+                k = k + 1;
+                if (k > 100000) {
+                    iDevidedString = "";
+                }
+            }
+        }
+
+        return StrPieces;
+    }
+
+    public static String sendMessAgeToSubcribeServer(
+            int qEntityId
+            ,String qUserLog
+            ,String qActionType
+            ,String MessAgeType
+    ){
+        try {
+
+            Socket s = new Socket("localhost", 3128);
+            String InMessageValue = qActionType + "/" + qUserLog + "/" + MessAgeType +"/" + String.valueOf(qEntityId) + "/";
+
+
+            s.getOutputStream().write(InMessageValue.getBytes());
+            // читаем ответ
+            byte buf[] = new byte[256 * 1024];
+            int r = s.getInputStream().read(buf);
+            String outSubscriberMessage = new String(buf, 0, r);
+            List<String> MessageAttr = GetListFromString(outSubscriberMessage,"|");
+            //System.out.println("Is operation Sussess :" + MessageAttr.get(0));
+            //System.out.println("Operation Message:" + MessageAttr.get(0));
+            s.close();
+
+            if (MessageAttr.get(0).equals("N")) {
+                return MessageAttr.get(1);
+            } else {
+                return "";
+            }
+
+        }
+        catch(IOException e) {
+            return "Ошибка подключения к серверу подписки";
         }
     }
 }

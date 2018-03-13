@@ -20,12 +20,23 @@ public class userDeviceIntegrationImpl implements userDeviceIntegration {
             ,String servLogin
             ,String servPassword
     ){
-        if (servLogin.equals(requestExecutionMethods.SERVLOG) && servPassword.equals(requestExecutionMethods.SERVPASS)){
+        try {
+            if (servLogin.equals(requestExecutionMethods.SERVLOG) && servPassword.equals(requestExecutionMethods.SERVPASS)) {
 
-            requestExecutionMethods.addNewUserFromSite(userLogin,userPassword,userMail,userPhone);
-            return "USER_WAS_ADDED";
-        } else {
-            return "WRONG_LOGIN_PASSWORD";
+                requestExecutionMethods.addNewUserFromSite(userLogin, userPassword, userMail, userPhone);
+                requestExecutionMethods.sendMessAgeToSubcribeServer(
+                        777
+                        , userLogin
+                        , "add"
+                        , "server"
+                );
+                return "USER_WAS_ADDED";
+            } else {
+                return "WRONG_LOGIN_PASSWORD";
+            }
+        } catch (Exception e){
+            e.printStackTrace();
+            return "EXECUTION_ERROR";
         }
     }
 }
