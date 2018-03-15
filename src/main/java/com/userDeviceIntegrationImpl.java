@@ -16,8 +16,7 @@ public class userDeviceIntegrationImpl implements userDeviceIntegration {
 
             if (dbUserPass != null && resPassSha != null) {
                 if (dbUserPass.equals(resPassSha)) {
-
-                    return "DEVICE_LINKED";
+                    return requestExecutionMethods.linkExecute(UID_CHAIN,userLogin);
                 } else {
                     return "WRONG_LOGIN_PASSWORD";
                 }

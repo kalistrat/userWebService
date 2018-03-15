@@ -74,12 +74,26 @@ public class requestExecutionMethods {
         }
     }
 
-    public static List<String> GetListFromString(String DevidedString,String Devider){
+    public static List<String> GetListFromString(String DevidedString, String Devider){
         List<String> StrPieces = new ArrayList<String>();
-        int k = 0;
-        String iDevidedString = DevidedString;
+        try {
+            int k = 0;
+            String iDevidedString;
+            // 123|321|456|
 
-        if (DevidedString.contains(Devider)) {
+            if (DevidedString.startsWith(Devider)) {
+                DevidedString = DevidedString.substring(1,DevidedString.length());
+            }
+
+            if (!DevidedString.contains(Devider)) {
+                iDevidedString = DevidedString + Devider;
+            } else {
+                if (!DevidedString.endsWith(Devider)) {
+                    iDevidedString = DevidedString + Devider;
+                } else {
+                    iDevidedString = DevidedString;
+                }
+            }
 
             while (!iDevidedString.equals("")) {
                 int Pos = iDevidedString.indexOf(Devider);
@@ -90,6 +104,9 @@ public class requestExecutionMethods {
                     iDevidedString = "";
                 }
             }
+
+        } catch (Exception e){
+            e.printStackTrace();
         }
 
         return StrPieces;
@@ -143,8 +160,8 @@ public class requestExecutionMethods {
             CallableStatement Stmt = Con.prepareCall("{? = call f_get_user_password(?)}");
             Stmt.registerOutParameter(1, Types.VARCHAR);
             Stmt.setString(2, userLog);
-            passSha = Stmt.getString(1);
             Stmt.execute();
+            passSha = Stmt.getString(1);
 
             Con.close();
 
@@ -176,9 +193,9 @@ public class requestExecutionMethods {
             Stmt.registerOutParameter(1, Types.VARCHAR);
             Stmt.setString(2, UID);
             Stmt.setString(3, userLog);
-            parentUID = Stmt.getString(1);
             Stmt.execute();
 
+            parentUID = Stmt.getString(1);
             Con.close();
 
 
@@ -194,43 +211,98 @@ public class requestExecutionMethods {
         return parentUID;
     }
 
-    public void linkExecute(String uidChain,String userLogin){
-        List<String> uidList = GetListFromString(uidChain,"|");
-        int k = 0;
+    public static boolean isChainCorrect(List<String> uidList,String userLogin){
+        boolean chainCorrect = false;
+        try {
 
-        if (uidList.size() > 1) {
+            int k = 0;
 
-            for (int i = 1; i < uidList.size() - 1; i++) {
-                String pUID = getParentUID(uidList.get(i), userLogin);
+            if (uidList.size() > 1) {
+
+                for (int i = 1; i < uidList.size() - 1; i++) {
+                    String pUID = getParentUID(uidList.get(i), userLogin);
+                    if (pUID != null) {
+                        if (pUID.equals(uidList.get(i - 1))) {
+                            k = k + 1;
+                        }
+                    }
+                }
+
+                if (k == uidList.size() - 2) {
+                    String parentLastUID = getParentUID(uidList.get(uidList.size()-1), userLogin);
+                    if (parentLastUID != null) {
+                        if (parentLastUID.equals(userLogin)) {
+                            chainCorrect = true;
+                        }
+                    }
+                }
+
+            } else if (uidList.size() == 1) {
+                String pUID = getParentUID(uidList.get(0), userLogin);
                 if (pUID != null) {
-                    if (pUID.equals(uidList.get(i - 1))) {
-                        k = k + 1;
+                    if (pUID.equals(userLogin)) {
+                        chainCorrect = true;
                     }
                 }
             }
-
-            if (k == uidList.size() - 1) {
-                // success
-            } else {
-                // fail
-            }
-
-        } else if (uidList.size() == 1) {
-            String pUID = getParentUID(uidList.get(0), userLogin);
-            if (pUID != null) {
-                if (pUID.equals(userLogin)) {
-                  // success
-                } else {
-                    //fail
-                }
-            } else {
-                //fail
-            }
-        } else {
+        } catch (Exception e) {
+            e.printStackTrace();
             //fail
         }
+        return chainCorrect;
 
+    }
 
+    public static boolean isPossibleLink(List<String> uidList){
+        boolean linkPossible = false;
+        try {
+
+            String lastItemPreffix = uidList.get(uidList.size()-1).substring(0,2);
+            String penaultItemPreffix = uidList.get(uidList.size()-2).substring(0,2);
+
+            if (uidList.size() == 1){
+
+                if ((lastItemPreffix.equals("BRI"))||(lastItemPreffix.equals("SEN"))) {
+                    linkPossible = true;
+                }
+
+            } else if (uidList.size() > 1) {
+
+                if (penaultItemPreffix.equals("BRI") && (lastItemPreffix.equals("SEN"))) {
+                    linkPossible = true;
+                } else if (penaultItemPreffix.equals("BRI") && (lastItemPreffix.equals("RET"))){
+                    linkPossible = true;
+                } else if (penaultItemPreffix.equals("RET") && (lastItemPreffix.equals("SEN"))){
+                    linkPossible = true;
+                } else if (penaultItemPreffix.equals("RET") && (lastItemPreffix.equals("RET"))){
+                    linkPossible = true;
+                }
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return linkPossible;
+    }
+
+    public static String linkExecute(String uidChain,String userLogin){
+        String linkResult;
+        try {
+            List<String> UIDSList = GetListFromString(uidChain, "|");
+            if (isChainCorrect(UIDSList,userLogin)){
+                if (isPossibleLink(UIDSList)){
+                    linkResult = "DEVICE_IS_LINKED";
+                } else {
+                    linkResult = "WRONG_TYPE_CONNECTED_DEVICE";
+                }
+            } else {
+                linkResult = "INVALID_DEVICE_SEQUENCE";
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            linkResult = "EXECUTION_ERROR";
+        }
+        return linkResult;
     }
 
 }
