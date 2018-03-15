@@ -3,10 +3,7 @@ package com;
 import java.io.IOException;
 import java.net.Socket;
 import java.security.MessageDigest;
-import java.sql.CallableStatement;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -131,4 +128,109 @@ public class requestExecutionMethods {
             return "Ошибка подключения к серверу подписки";
         }
     }
+
+    public static String getUserPassSha(String userLog){
+        String passSha = null;
+        try {
+
+            Class.forName(JDBC_DRIVER);
+            Connection Con = DriverManager.getConnection(
+                    DB_URL
+                    , USER
+                    , PASS
+            );
+
+            CallableStatement Stmt = Con.prepareCall("{? = call f_get_user_password(?)}");
+            Stmt.registerOutParameter(1, Types.VARCHAR);
+            Stmt.setString(2, userLog);
+            passSha = Stmt.getString(1);
+            Stmt.execute();
+
+            Con.close();
+
+
+        }catch(SQLException se){
+            //Handle errors for JDBC
+            se.printStackTrace();
+
+        }catch(Exception e) {
+            //Handle errors for Class.forName
+            e.printStackTrace();
+
+        }
+        return passSha;
+    }
+
+    public static String getParentUID(String UID,String userLog){
+        String parentUID = null;
+        try {
+
+            Class.forName(JDBC_DRIVER);
+            Connection Con = DriverManager.getConnection(
+                    DB_URL
+                    , USER
+                    , PASS
+            );
+
+            CallableStatement Stmt = Con.prepareCall("{? = call getParentUID(? ,?)}");
+            Stmt.registerOutParameter(1, Types.VARCHAR);
+            Stmt.setString(2, UID);
+            Stmt.setString(3, userLog);
+            parentUID = Stmt.getString(1);
+            Stmt.execute();
+
+            Con.close();
+
+
+        }catch(SQLException se){
+            //Handle errors for JDBC
+            se.printStackTrace();
+
+        }catch(Exception e) {
+            //Handle errors for Class.forName
+            e.printStackTrace();
+
+        }
+        return parentUID;
+    }
+
+    public void linkExecute(String uidChain,String userLogin){
+        List<String> uidList = GetListFromString(uidChain,"|");
+        int k = 0;
+
+        if (uidList.size() > 1) {
+
+            for (int i = 1; i < uidList.size() - 1; i++) {
+                String pUID = getParentUID(uidList.get(i), userLogin);
+                if (pUID != null) {
+                    if (pUID.equals(uidList.get(i - 1))) {
+                        k = k + 1;
+                    }
+                }
+            }
+
+            if (k == uidList.size() - 1) {
+                // success
+            } else {
+                // fail
+            }
+
+        } else if (uidList.size() == 1) {
+            String pUID = getParentUID(uidList.get(0), userLogin);
+            if (pUID != null) {
+                if (pUID.equals(userLogin)) {
+                  // success
+                } else {
+                    //fail
+                }
+            } else {
+                //fail
+            }
+        } else {
+            //fail
+        }
+
+
+    }
+
 }

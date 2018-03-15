@@ -7,10 +7,28 @@ import javax.jws.WebService;
 public class userDeviceIntegrationImpl implements userDeviceIntegration {
 
     public String linkUserDevice(String UID_CHAIN
-            ,String servLogin
-            ,String servPassword
+            ,String userLogin
+            ,String userPassword
     ) {
-        return "Hello " + UID_CHAIN;
+        try {
+            String dbUserPass = requestExecutionMethods.getUserPassSha(userLogin);
+            String resPassSha = requestExecutionMethods.sha256(userPassword);
+
+            if (dbUserPass != null && resPassSha != null) {
+                if (dbUserPass.equals(resPassSha)) {
+
+                    return "DEVICE_LINKED";
+                } else {
+                    return "WRONG_LOGIN_PASSWORD";
+                }
+            } else {
+                return "WRONG_LOGIN_PASSWORD";
+            }
+        } catch (Exception e){
+            e.printStackTrace();
+            return "EXECUTION_ERROR";
+        }
+
     }
 
     public String addNewUser(String userLogin
