@@ -211,16 +211,53 @@ public class requestExecutionMethods {
         return parentUID;
     }
 
+    public static String getLeafType(String UID,String userLog){
+        String LeafType = null;
+        try {
+
+            Class.forName(JDBC_DRIVER);
+            Connection Con = DriverManager.getConnection(
+                    DB_URL
+                    , USER
+                    , PASS
+            );
+
+            CallableStatement Stmt = Con.prepareCall("{? = call getLeafType(? ,?)}");
+            Stmt.registerOutParameter(1, Types.VARCHAR);
+            Stmt.setString(2, UID);
+            Stmt.setString(3, userLog);
+            Stmt.execute();
+
+            LeafType = Stmt.getString(1);
+            Con.close();
+            if (LeafType == null){
+                LeafType = "";
+            }
+
+
+        }catch(SQLException se){
+            //Handle errors for JDBC
+            se.printStackTrace();
+
+        }catch(Exception e) {
+            //Handle errors for Class.forName
+            e.printStackTrace();
+
+        }
+        return LeafType;
+    }
+
     public static boolean isChainCorrect(List<String> uidList,String userLogin){
         boolean chainCorrect = false;
         try {
 
             int k = 0;
 
-            if (uidList.size() > 1) {
+            if (uidList.size() > 2) {
 
                 for (int i = 1; i < uidList.size() - 1; i++) {
                     String pUID = getParentUID(uidList.get(i), userLogin);
+                    //System.out.println("pUID with size > 2 : " + pUID);
                     if (pUID != null) {
                         if (pUID.equals(uidList.get(i - 1))) {
                             k = k + 1;
@@ -244,6 +281,17 @@ public class requestExecutionMethods {
                         chainCorrect = true;
                     }
                 }
+            } else if (uidList.size() == 2) {
+                String pUID = getParentUID(uidList.get(0), userLogin);
+                String leafTypeFirstItem = getLeafType(uidList.get(0), userLogin);
+                //System.out.println("pUID : " + pUID);
+                //System.out.println("leafTypeFirstItem : " + leafTypeFirstItem);
+
+                if (pUID != null) {
+                    if (pUID.equals(userLogin) && leafTypeFirstItem.equals("FOLDER")) {
+                        chainCorrect = true;
+                    }
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -257,16 +305,26 @@ public class requestExecutionMethods {
         boolean linkPossible = false;
         try {
 
-            String lastItemPreffix = uidList.get(uidList.size()-1).substring(0,2);
-            String penaultItemPreffix = uidList.get(uidList.size()-2).substring(0,2);
+            String lastItemPreffix;
+            String penaultItemPreffix;
 
             if (uidList.size() == 1){
+                lastItemPreffix = uidList.get(uidList.size()-1).substring(0,3);
 
-                if ((lastItemPreffix.equals("BRI"))||(lastItemPreffix.equals("SEN"))) {
+                //System.out.println("lastItemPreffix : " + lastItemPreffix);
+
+                if (lastItemPreffix.equals("BRI")) {
                     linkPossible = true;
                 }
 
             } else if (uidList.size() > 1) {
+
+                lastItemPreffix = uidList.get(uidList.size()-1).substring(0,3);
+                penaultItemPreffix = uidList.get(uidList.size()-2).substring(0,3);
+
+                //System.out.println("lastItemPreffix : " + lastItemPreffix);
+                //System.out.println("penaultItemPreffix : " + penaultItemPreffix);
+
 
                 if (penaultItemPreffix.equals("BRI") && (lastItemPreffix.equals("SEN"))) {
                     linkPossible = true;
@@ -289,9 +347,31 @@ public class requestExecutionMethods {
         String linkResult;
         try {
             List<String> UIDSList = GetListFromString(uidChain, "|");
+
+            //for (String iUID : UIDSList)
+            //System.out.println("iUID : " + iUID);
+
             if (isChainCorrect(UIDSList,userLogin)){
                 if (isPossibleLink(UIDSList)){
-                    linkResult = "DEVICE_IS_LINKED";
+                    if (getLeafType(UIDSList.get(UIDSList.size()-1),userLogin).equals("LEAF")) {
+
+                        linkResponse resp;
+                        String lastItemPreffix = UIDSList.get(UIDSList.size() - 1).substring(0, 3);
+                        if (UIDSList.size() == 1) {
+                            resp = updateLeaf(userLogin, UIDSList.get(0), userLogin);
+                        } else {
+                            resp = updateLeaf(UIDSList.get(UIDSList.size() - 2), UIDSList.get(UIDSList.size() - 1), userLogin);
+                        }
+                        linkResult = "mqttLogin : " + resp.mqttLog + ";\n"
+                                + "mqttPassword : " + resp.mqttPass + ";\n"
+                                + "mqttHost : " + resp.mqttHost + ";\n"
+                                + "mqttTopic : " + resp.mqttTopic + ";";
+                        if (lastItemPreffix.equals("BRI")) {
+                            //to call add mqtt folder if bridge
+                        }
+                    } else {
+                        linkResult = "DEVICE_ALREADY_ATTACHED";
+                    }
                 } else {
                     linkResult = "WRONG_TYPE_CONNECTED_DEVICE";
                 }
@@ -300,9 +380,53 @@ public class requestExecutionMethods {
             }
         } catch (Exception e) {
             e.printStackTrace();
-            linkResult = "EXECUTION_ERROR";
+            linkResult = "EXECUTION_ERROR(linkExecute)";
         }
         return linkResult;
+    }
+
+    public static linkResponse updateLeaf(String parentUID,String childUID,String userLog){
+        linkResponse responseValue = null;
+        try {
+
+            Class.forName(JDBC_DRIVER);
+            Connection Con = DriverManager.getConnection(
+                    DB_URL
+                    , USER
+                    , PASS
+            );
+
+            CallableStatement Stmt = Con.prepareCall("{call updateLeaf(?,?,?,?,?,?,?,?)}");
+            Stmt.setString(1, parentUID);
+            Stmt.setString(2, childUID);
+            Stmt.setString(3, userLog);
+            Stmt.registerOutParameter(4, Types.VARCHAR);
+            Stmt.registerOutParameter(5, Types.VARCHAR);
+            Stmt.registerOutParameter(6, Types.VARCHAR);
+            Stmt.registerOutParameter(7, Types.VARCHAR);
+            Stmt.registerOutParameter(8, Types.INTEGER);
+            Stmt.execute();
+
+            responseValue = new linkResponse(
+                    Stmt.getString(4)
+                    ,Stmt.getString(5)
+                    ,Stmt.getString(6)
+                    ,Stmt.getString(7)
+                    ,Stmt.getInt(8)
+            );
+            Con.close();
+
+
+        }catch(SQLException se){
+            //Handle errors for JDBC
+            se.printStackTrace();
+
+        }catch(Exception e) {
+            //Handle errors for Class.forName
+            e.printStackTrace();
+
+        }
+        return responseValue;
     }
 
 }

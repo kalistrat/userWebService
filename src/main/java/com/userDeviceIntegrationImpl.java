@@ -25,7 +25,7 @@ public class userDeviceIntegrationImpl implements userDeviceIntegration {
             }
         } catch (Exception e){
             e.printStackTrace();
-            return "EXECUTION_ERROR";
+            return "EXECUTION_ERROR(linkUserDevice)";
         }
 
     }
