@@ -9,13 +9,15 @@ public class linkResponse {
     String mqttPass;
     String mqttHost;
     String mqttTopic;
-    int treeId;
+    int leafId;
+    int taskId;
 
-    public linkResponse(String devLog,String devPass, String devHost, String devTopic, int TreeId){
+    public linkResponse(String devLog,String devPass, String devHost, String devTopic, int LeafId, int TaskId){
         mqttLog = devLog;
         mqttPass = devPass;
         mqttHost = devHost;
         mqttTopic = devTopic;
-        treeId = TreeId;
+        leafId = LeafId;
+        taskId = TaskId;
     }
 }

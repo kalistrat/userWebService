@@ -12,10 +12,10 @@ public class userDeviceIntegrationImpl implements userDeviceIntegration {
     ) {
         try {
             String dbUserPass = requestExecutionMethods.getUserPassSha(userLogin);
-            String resPassSha = requestExecutionMethods.sha256(userPassword);
+            //String resPassSha = requestExecutionMethods.sha256(userPassword);
 
-            if (dbUserPass != null && resPassSha != null) {
-                if (dbUserPass.equals(resPassSha)) {
+            if (dbUserPass != null) {
+                if (dbUserPass.equals(userPassword)) {
                     return requestExecutionMethods.linkExecute(UID_CHAIN,userLogin);
                 } else {
                     return "WRONG_LOGIN_PASSWORD";

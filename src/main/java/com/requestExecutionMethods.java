@@ -56,6 +56,8 @@ public class requestExecutionMethods {
         }
     }
 
+
+
     public static String sha256(String base) {
         try{
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -366,8 +368,22 @@ public class requestExecutionMethods {
                                 + "mqttPassword : " + resp.mqttPass + ";\n"
                                 + "mqttHost : " + resp.mqttHost + ";\n"
                                 + "mqttTopic : " + resp.mqttTopic + ";";
+
                         if (lastItemPreffix.equals("BRI")) {
-                            //to call add mqtt folder if bridge
+                            sendMessAgeToSubcribeServer(
+                                    resp.leafId
+                                    , userLogin
+                                    , "change"
+                                    , "server"
+                            );
+                        }
+                        if (lastItemPreffix.equals("SEN")) {
+                            sendMessAgeToSubcribeServer(
+                                    resp.taskId
+                                    , userLogin
+                                    , "add"
+                                    , "task"
+                            );
                         }
                     } else {
                         linkResult = "DEVICE_ALREADY_ATTACHED";
@@ -396,7 +412,7 @@ public class requestExecutionMethods {
                     , PASS
             );
 
-            CallableStatement Stmt = Con.prepareCall("{call updateLeaf(?,?,?,?,?,?,?,?)}");
+            CallableStatement Stmt = Con.prepareCall("{call updateLeaf(?,?,?,?,?,?,?,?,?)}");
             Stmt.setString(1, parentUID);
             Stmt.setString(2, childUID);
             Stmt.setString(3, userLog);
@@ -405,6 +421,8 @@ public class requestExecutionMethods {
             Stmt.registerOutParameter(6, Types.VARCHAR);
             Stmt.registerOutParameter(7, Types.VARCHAR);
             Stmt.registerOutParameter(8, Types.INTEGER);
+            Stmt.registerOutParameter(9, Types.INTEGER);
+
             Stmt.execute();
 
             responseValue = new linkResponse(
@@ -413,6 +431,7 @@ public class requestExecutionMethods {
                     ,Stmt.getString(6)
                     ,Stmt.getString(7)
                     ,Stmt.getInt(8)
+                    ,Stmt.getInt(9)
             );
             Con.close();
 
