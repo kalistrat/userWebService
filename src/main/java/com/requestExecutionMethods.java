@@ -386,17 +386,17 @@ public class requestExecutionMethods {
                             );
                         }
                     } else {
-                        linkResult = "DEVICE_ALREADY_ATTACHED";
+                        linkResult = "ERROR_DEVICE_ALREADY_ATTACHED";
                     }
                 } else {
-                    linkResult = "WRONG_TYPE_CONNECTED_DEVICE";
+                    linkResult = "ERROR_WRONG_TYPE_CONNECTED_DEVICE";
                 }
             } else {
-                linkResult = "INVALID_DEVICE_SEQUENCE";
+                linkResult = "ERROR_INVALID_DEVICE_SEQUENCE";
             }
         } catch (Exception e) {
             e.printStackTrace();
-            linkResult = "EXECUTION_ERROR(linkExecute)";
+            linkResult = "ERROR_EXECUTION";
         }
         return linkResult;
     }
