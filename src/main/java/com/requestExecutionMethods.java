@@ -319,6 +319,10 @@ public class requestExecutionMethods {
                     linkPossible = true;
                 }
 
+                if (lastItemPreffix.equals("MET")) {
+                    linkPossible = true;
+                }
+
             } else if (uidList.size() > 1) {
 
                 lastItemPreffix = uidList.get(uidList.size()-1).substring(0,3);
@@ -357,34 +361,85 @@ public class requestExecutionMethods {
                 if (isPossibleLink(UIDSList)){
                     if (getLeafType(UIDSList.get(UIDSList.size()-1),userLogin).equals("LEAF")) {
 
-                        linkResponse resp;
+
                         String lastItemPreffix = UIDSList.get(UIDSList.size() - 1).substring(0, 3);
                         if (UIDSList.size() == 1) {
-                            resp = updateLeaf(userLogin, UIDSList.get(0), userLogin);
-                        } else {
-                            resp = updateLeaf(UIDSList.get(UIDSList.size() - 2), UIDSList.get(UIDSList.size() - 1), userLogin);
-                        }
-                        linkResult = "mqttLogin : " + resp.mqttLog + ";\n"
-                                + "mqttPassword : " + resp.mqttPass + ";\n"
-                                + "mqttHost : " + resp.mqttHost + ";\n"
-                                + "mqttTopic : " + resp.mqttTopic + ";";
+                            if (lastItemPreffix.equals("BRI")) {
+                                linkResponse resp = updateLeaf(userLogin, UIDSList.get(0), userLogin);
 
-                        if (lastItemPreffix.equals("BRI")) {
-                            sendMessAgeToSubcribeServer(
-                                    resp.leafId
-                                    , userLogin
-                                    , "change"
-                                    , "server"
-                            );
-                        }
-                        if (lastItemPreffix.equals("SEN")) {
+                                linkResult = "mqttLogin : " + resp.mqttLog + ";\n"
+                                        + "mqttPassword : " + resp.mqttPass + ";\n"
+                                        + "mqttHost : " + resp.mqttHost + ";\n"
+                                        + "fromServerTopic : " + resp.mqttTopic + ";\n"
+                                        + "toServerTopic : " + resp.mqttToTopic + ";";
+
+                                sendMessAgeToSubcribeServer(
+                                        resp.leafId
+                                        , userLogin
+                                        , "change"
+                                        , "server"
+                                );
+
+                            } else if (lastItemPreffix.equals("MET"))  {
+                                linkPackageMetResponse respMet = updateMeteoPackage(userLogin, UIDSList.get(0), userLogin);
+
+                                linkResult = "mqttLogin : " + respMet.mqttLog + ";\n"
+                                        + "mqttPassword : " + respMet.mqttPass + ";\n"
+                                        + "mqttHost : " + respMet.mqttHost + ";\n"
+                                        + "fromServerTopic : " + respMet.fromMqttTopic + ";\n"
+                                        + "toServerTopic : " + respMet.toMqttTopic + ";\n"
+                                        + "temTopic : " + respMet.temMqttTopic + ";\n"
+                                        + "humTopic : " + respMet.humMqttTopic + ";\n"
+                                        + "lghtTopic : " + respMet.lghtMqttTopic + ";\n"
+                                        + "fromMqttTopic : " + respMet.fromMqttTopic + ";";
+
+                                sendMessAgeToSubcribeServer(
+                                        respMet.leafId
+                                        , userLogin
+                                        , "change"
+                                        , "server"
+                                );
+
+                                sendMessAgeToSubcribeServer(
+                                        respMet.temTaskId
+                                        , userLogin
+                                        , "add"
+                                        , "task"
+                                );
+
+                                sendMessAgeToSubcribeServer(
+                                        respMet.humTaskId
+                                        , userLogin
+                                        , "add"
+                                        , "task"
+                                );
+
+                                sendMessAgeToSubcribeServer(
+                                        respMet.lghtTaskId
+                                        , userLogin
+                                        , "add"
+                                        , "task"
+                                );
+
+                            } else {
+                                linkResult = "ERROR_WRONG_TYPE_CONNECTED_DEVICE";
+                            }
+                        } else {
+                            linkResponse resp = updateLeaf(UIDSList.get(UIDSList.size() - 2), UIDSList.get(UIDSList.size() - 1), userLogin);
                             sendMessAgeToSubcribeServer(
                                     resp.taskId
                                     , userLogin
                                     , "add"
                                     , "task"
                             );
+                            linkResult = "mqttLogin : " + resp.mqttLog + ";\n"
+                                    + "mqttPassword : " + resp.mqttPass + ";\n"
+                                    + "mqttHost : " + resp.mqttHost + ";\n"
+                                    + "fromServerTopic : " + resp.mqttTopic + ";\n"
+                                    + "toServerTopic : " + resp.mqttToTopic + ";";
+
                         }
+
                     } else {
                         linkResult = "ERROR_DEVICE_ALREADY_ATTACHED";
                     }
@@ -412,7 +467,7 @@ public class requestExecutionMethods {
                     , PASS
             );
 
-            CallableStatement Stmt = Con.prepareCall("{call updateLeaf(?,?,?,?,?,?,?,?,?)}");
+            CallableStatement Stmt = Con.prepareCall("{call updateLeaf(?,?,?,?,?,?,?,?,?,?)}");
             Stmt.setString(1, parentUID);
             Stmt.setString(2, childUID);
             Stmt.setString(3, userLog);
@@ -422,6 +477,7 @@ public class requestExecutionMethods {
             Stmt.registerOutParameter(7, Types.VARCHAR);
             Stmt.registerOutParameter(8, Types.INTEGER);
             Stmt.registerOutParameter(9, Types.INTEGER);
+            Stmt.registerOutParameter(10, Types.VARCHAR);
 
             Stmt.execute();
 
@@ -432,6 +488,66 @@ public class requestExecutionMethods {
                     ,Stmt.getString(7)
                     ,Stmt.getInt(8)
                     ,Stmt.getInt(9)
+                    ,Stmt.getString(10)
+            );
+            Con.close();
+
+
+        }catch(SQLException se){
+            //Handle errors for JDBC
+            se.printStackTrace();
+
+        }catch(Exception e) {
+            //Handle errors for Class.forName
+            e.printStackTrace();
+
+        }
+        return responseValue;
+    }
+
+    public static linkPackageMetResponse updateMeteoPackage(String parentUID,String childUID,String userLog){
+        linkPackageMetResponse responseValue = null;
+        try {
+
+            Class.forName(JDBC_DRIVER);
+            Connection Con = DriverManager.getConnection(
+                    DB_URL
+                    , USER
+                    , PASS
+            );
+
+            CallableStatement Stmt = Con.prepareCall("{call updateMeteoPackage(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)}");
+            Stmt.setString(1, parentUID);
+            Stmt.setString(2, childUID);
+            Stmt.setString(3, userLog);
+            Stmt.registerOutParameter(4, Types.INTEGER);
+            Stmt.registerOutParameter(5, Types.INTEGER);
+            Stmt.registerOutParameter(6, Types.INTEGER);
+            Stmt.registerOutParameter(7, Types.VARCHAR);
+            Stmt.registerOutParameter(8, Types.VARCHAR);
+            Stmt.registerOutParameter(9, Types.VARCHAR);
+            Stmt.registerOutParameter(10, Types.VARCHAR);
+            Stmt.registerOutParameter(11, Types.VARCHAR);
+            Stmt.registerOutParameter(12, Types.VARCHAR);
+            Stmt.registerOutParameter(13, Types.VARCHAR);
+            Stmt.registerOutParameter(14, Types.VARCHAR);
+            Stmt.registerOutParameter(15, Types.INTEGER);
+
+            Stmt.execute();
+
+            responseValue = new linkPackageMetResponse(
+                    Stmt.getInt(4)
+                    ,Stmt.getInt(5)
+                    ,Stmt.getInt(6)
+                    ,Stmt.getString(7)
+                    ,Stmt.getString(8)
+                    ,Stmt.getString(9)
+                    ,Stmt.getString(10)
+                    ,Stmt.getString(11)
+                    ,Stmt.getString(12)
+                    ,Stmt.getString(13)
+                    ,Stmt.getString(14)
+                    ,Stmt.getInt(15)
             );
             Con.close();
 
