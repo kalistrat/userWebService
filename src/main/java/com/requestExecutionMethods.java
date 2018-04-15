@@ -390,8 +390,7 @@ public class requestExecutionMethods {
                                         + "toServerTopic : " + respMet.toMqttTopic + ";\n"
                                         + "temTopic : " + respMet.temMqttTopic + ";\n"
                                         + "humTopic : " + respMet.humMqttTopic + ";\n"
-                                        + "lghtTopic : " + respMet.lghtMqttTopic + ";\n"
-                                        + "fromMqttTopic : " + respMet.fromMqttTopic + ";";
+                                        + "lghtTopic : " + respMet.lghtMqttTopic + ";";
 
                                 sendMessAgeToSubcribeServer(
                                         respMet.leafId
@@ -400,26 +399,6 @@ public class requestExecutionMethods {
                                         , "server"
                                 );
 
-                                sendMessAgeToSubcribeServer(
-                                        respMet.temTaskId
-                                        , userLogin
-                                        , "add"
-                                        , "task"
-                                );
-
-                                sendMessAgeToSubcribeServer(
-                                        respMet.humTaskId
-                                        , userLogin
-                                        , "add"
-                                        , "task"
-                                );
-
-                                sendMessAgeToSubcribeServer(
-                                        respMet.lghtTaskId
-                                        , userLogin
-                                        , "add"
-                                        , "task"
-                                );
 
                             } else {
                                 linkResult = "ERROR_WRONG_TYPE_CONNECTED_DEVICE";
