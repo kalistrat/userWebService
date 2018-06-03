@@ -1,10 +1,17 @@
 package com;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.net.URLDecoder;
+import java.security.Key;
+import java.security.KeyStore;
 import java.security.MessageDigest;
+import java.security.PublicKey;
+import java.security.cert.Certificate;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 
 /**
@@ -349,7 +356,7 @@ public class requestExecutionMethods {
         return linkPossible;
     }
 
-    public static String linkExecute(String uidChain,String userLogin){
+    public static String linkExecute(String uidChain,String userLogin, String appPath){
         String linkResult;
         try {
             List<String> UIDSList = GetListFromString(uidChain, "|");
@@ -371,7 +378,8 @@ public class requestExecutionMethods {
                                         + "mqttPassword : " + resp.mqttPass + ";\n"
                                         + "mqttHost : " + resp.mqttHost + ";\n"
                                         + "fromServerTopic : " + resp.mqttTopic + ";\n"
-                                        + "toServerTopic : " + resp.mqttToTopic + ";";
+                                        + "toServerTopic : " + resp.mqttToTopic + ";\n"
+                                        + "certBase64 : " + getCertBase64(appPath);
 
                                 sendMessAgeToSubcribeServer(
                                         resp.leafId
@@ -390,7 +398,8 @@ public class requestExecutionMethods {
                                         + "toServerTopic : " + respMet.toMqttTopic + ";\n"
                                         + "temTopic : " + respMet.temMqttTopic + ";\n"
                                         + "humTopic : " + respMet.humMqttTopic + ";\n"
-                                        + "lghtTopic : " + respMet.lghtMqttTopic + ";";
+                                        + "lghtTopic : " + respMet.lghtMqttTopic + ";\n"
+                                        + "certBase64 : " + getCertBase64(appPath);
 
                                 sendMessAgeToSubcribeServer(
                                         respMet.leafId
@@ -411,11 +420,7 @@ public class requestExecutionMethods {
                                     , "add"
                                     , "task"
                             );
-                            linkResult = "mqttLogin : " + resp.mqttLog + ";\n"
-                                    + "mqttPassword : " + resp.mqttPass + ";\n"
-                                    + "mqttHost : " + resp.mqttHost + ";\n"
-                                    + "fromServerTopic : " + resp.mqttTopic + ";\n"
-                                    + "toServerTopic : " + resp.mqttToTopic + ";";
+                            linkResult = "toServerTopic : " + resp.mqttToTopic + ";";
 
                         }
 
@@ -541,6 +546,29 @@ public class requestExecutionMethods {
 
         }
         return responseValue;
+    }
+
+    public static String getCertBase64(String path){
+        String certKeyString = null;
+        try {
+
+            String decodedPath = URLDecoder.decode(path, "UTF-8");
+            FileInputStream is = new FileInputStream(decodedPath + "serverkeystore.jks");
+            KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
+            keystore.load(is, "3PointShotMqtt".toCharArray());
+            String alias = "testserver";
+
+            //Key key = keystore.getKey(alias, "3PointShotMqtt".toCharArray());
+            Certificate cert = keystore.getCertificate(alias);
+            // Get public key
+            //PublicKey publicKey = cert.getPublicKey();
+
+            certKeyString = new String(Base64.getEncoder().encodeToString(cert.getEncoded()));
+
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+        return certKeyString;
     }
 
 }
