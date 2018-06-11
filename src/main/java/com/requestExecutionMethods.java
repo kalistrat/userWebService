@@ -425,7 +425,62 @@ public class requestExecutionMethods {
                         }
 
                     } else {
-                        linkResult = "ERROR_DEVICE_ALREADY_ATTACHED";
+                        //linkResult = "ERROR_DEVICE_ALREADY_ATTACHED";
+                        String lastItemPreffix = UIDSList.get(UIDSList.size() - 1).substring(0, 3);
+                        if (UIDSList.size() == 1) {
+                            if (lastItemPreffix.equals("BRI")) {
+
+                                linkResponse resp = getMqttConnetionArgsUID(UIDSList.get(0));
+
+                                if (resp.userName.equals(userLogin)) {
+
+                                    linkResult = "mqttLogin : " + resp.mqttLog + ";\n"
+                                            + "mqttPassword : " + resp.mqttPass + ";\n"
+                                            + "mqttHost : " + resp.mqttHost + ";\n"
+                                            + "fromServerTopic : " + resp.mqttTopic + ";\n"
+                                            + "toServerTopic : " + resp.mqttToTopic + ";\n"
+                                            + "certBase64 : " + getCertBase64(appPath);
+                                } else {
+                                    linkResult = "ERROR_USER_IS_NOT_THE_OWNER_DEVICE";
+                                }
+
+
+                            } else if (lastItemPreffix.equals("MET"))  {
+
+                                linkPackageMetResponse respMet = getMqttConnectionMETArgs(UIDSList.get(0));
+
+                                if (respMet.userName.equals(userLogin)) {
+
+
+                                    linkResult = "mqttLogin : " + respMet.mqttLog + ";\n"
+                                            + "mqttPassword : " + respMet.mqttPass + ";\n"
+                                            + "mqttHost : " + respMet.mqttHost + ";\n"
+                                            + "fromServerTopic : " + respMet.fromMqttTopic + ";\n"
+                                            + "toServerTopic : " + respMet.toMqttTopic + ";\n"
+                                            + "temTopic : " + respMet.temMqttTopic + ";\n"
+                                            + "humTopic : " + respMet.humMqttTopic + ";\n"
+                                            + "lghtTopic : " + respMet.lghtMqttTopic + ";\n"
+                                            + "certBase64 : " + getCertBase64(appPath);
+                                } else {
+                                    linkResult = "ERROR_USER_IS_NOT_THE_OWNER_DEVICE";
+                                }
+
+
+                            } else {
+                                linkResult = "ERROR_WRONG_TYPE_CONNECTED_DEVICE";
+                            }
+                        } else {
+
+                            linkResponse resp = getMqttConnetionArgsUID(UIDSList.get(UIDSList.size() - 1));
+
+                            if (resp.userName.equals(userLogin)) {
+
+                                linkResult = "toServerTopic : " + resp.mqttToTopic + ";";
+                            } else {
+                                linkResult = "ERROR_USER_IS_NOT_THE_OWNER_DEVICE";
+                            }
+                        }
+
                     }
                 } else {
                     linkResult = "ERROR_WRONG_TYPE_CONNECTED_DEVICE";
@@ -473,6 +528,7 @@ public class requestExecutionMethods {
                     ,Stmt.getInt(8)
                     ,Stmt.getInt(9)
                     ,Stmt.getString(10)
+                    ,null
             );
             Con.close();
 
@@ -532,6 +588,7 @@ public class requestExecutionMethods {
                     ,Stmt.getString(13)
                     ,Stmt.getString(14)
                     ,Stmt.getInt(15)
+                    ,null
             );
             Con.close();
 
@@ -569,6 +626,116 @@ public class requestExecutionMethods {
             e.printStackTrace();
         }
         return certKeyString;
+    }
+
+    public static linkResponse getMqttConnetionArgsUID(String UID){
+
+        linkResponse responseValue = null;
+
+        try {
+
+            Class.forName(JDBC_DRIVER);
+            Connection Con = DriverManager.getConnection(
+                    DB_URL
+                    , USER
+                    , PASS
+            );
+
+            CallableStatement Stmt = Con.prepareCall("{call getMqttConnetionArgsUID(?,?,?,?,?,?,?,?,?,?)}");
+            Stmt.setString(1,UID);
+            Stmt.registerOutParameter (2, Types.VARCHAR);
+            Stmt.registerOutParameter (3, Types.VARCHAR);
+            Stmt.registerOutParameter (4, Types.VARCHAR);
+            Stmt.registerOutParameter (5, Types.VARCHAR);
+            Stmt.registerOutParameter (6, Types.VARCHAR);
+            Stmt.registerOutParameter (7, Types.VARCHAR);
+            Stmt.registerOutParameter (8, Types.VARCHAR);
+            Stmt.registerOutParameter (9, Types.VARCHAR);
+            Stmt.registerOutParameter (10, Types.VARCHAR);
+
+            Stmt.execute();
+
+            responseValue = new linkResponse(
+                    Stmt.getString(3)//oDeviceLogin
+                    ,Stmt.getString(4)//oDevicePassWord
+                    ,Stmt.getString(10)//oHost
+                    ,Stmt.getString(2)//oTopicName
+                    ,0
+                    ,0
+                    ,Stmt.getString(9)//oTopicTo
+                    ,Stmt.getString(8)//userName
+            );
+
+            Con.close();
+
+        }catch(SQLException se){
+            //Handle errors for JDBC
+            se.printStackTrace();
+        }catch(Exception e) {
+            //Handle errors for Class.forName
+            e.printStackTrace();
+        }
+
+        return responseValue;
+    }
+
+
+    public static linkPackageMetResponse getMqttConnectionMETArgs(String UID){
+
+        linkPackageMetResponse responseValue = null;
+
+        try {
+
+            Class.forName(JDBC_DRIVER);
+            Connection Con = DriverManager.getConnection(
+                    DB_URL
+                    , USER
+                    , PASS
+            );
+
+            CallableStatement Stmt = Con.prepareCall("{call getMqttConnectionMETArgs(?,?,?,?,?,?,?,?,?,?)}");
+            Stmt.setString(1,UID);
+            Stmt.registerOutParameter (2, Types.VARCHAR);//oPackLog
+            Stmt.registerOutParameter (3, Types.VARCHAR);//oPackPass
+            Stmt.registerOutParameter (4, Types.VARCHAR);//oPackHost
+            Stmt.registerOutParameter (5, Types.VARCHAR);//oPackFromTopic
+            Stmt.registerOutParameter (6, Types.VARCHAR);//oPackToTopic
+            Stmt.registerOutParameter (7, Types.VARCHAR);//oTemTopic
+            Stmt.registerOutParameter (8, Types.VARCHAR);//oHumTopic
+            Stmt.registerOutParameter (9, Types.VARCHAR);//oLghtTopic
+            Stmt.registerOutParameter (10, Types.VARCHAR);//oUserName
+
+
+            Stmt.execute();
+
+            responseValue = new linkPackageMetResponse(
+            0
+            , 0
+            , 0
+            , Stmt.getString(2)//oPackLog
+            , Stmt.getString(3)//oPackPass
+            , Stmt.getString(4)//oPackHost
+            , Stmt.getString(5)//oPackFromTopic
+            , Stmt.getString(6)//oPackToTopic
+            , Stmt.getString(7)//oTemTopic
+            , Stmt.getString(8)//oHumTopic
+            , Stmt.getString(9)//oLghtTopic
+            , 0
+            , Stmt.getString(10)//UserName
+            );
+
+
+            Con.close();
+
+        }catch(SQLException se){
+            //Handle errors for JDBC
+            se.printStackTrace();
+        }catch(Exception e) {
+            //Handle errors for Class.forName
+            e.printStackTrace();
+        }
+
+        return responseValue;
     }
 
 }

@@ -19,6 +19,7 @@ public class linkPackageMetResponse {
     int lghtTaskId;
 
     int leafId;
+    String userName;
 
 
     public linkPackageMetResponse(
@@ -35,6 +36,7 @@ int oTemTaskId
 , String oHumTopic
 , String oLghtTopic
 , int oLeafId
+, String UserName
 
     ){
 
@@ -53,6 +55,7 @@ int oTemTaskId
         lghtTaskId = oLghtTaskId;
 
         leafId = oLeafId;
+        userName = UserName;
 
     }
 }
