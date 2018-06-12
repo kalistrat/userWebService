@@ -17,7 +17,7 @@ public class userDeviceIntegrationImpl implements userDeviceIntegration {
                     .getLocation()
                     .getPath();
 
-        System.out.println("CertBase64 : " + requestExecutionMethods.getCertBase64(path));
+        //System.out.println("CertBase64 : " + requestExecutionMethods.getCertBase64(path));
 
         try {
             String dbUserPass = requestExecutionMethods.getUserPassSha(userLogin);

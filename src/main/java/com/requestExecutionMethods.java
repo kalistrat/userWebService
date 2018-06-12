@@ -471,11 +471,11 @@ public class requestExecutionMethods {
                             }
                         } else {
 
-                            linkResponse resp = getMqttConnetionArgsUID(UIDSList.get(UIDSList.size() - 1));
+                            List<String> mqttArgs = getSensorTopicUID(UIDSList.get(UIDSList.size() - 1));
 
-                            if (resp.userName.equals(userLogin)) {
+                            if (mqttArgs.get(1).equals(userLogin)) {
 
-                                linkResult = "toServerTopic : " + resp.mqttToTopic + ";";
+                                linkResult = "toServerTopic : " + mqttArgs.get(0) + ";";
                             } else {
                                 linkResult = "ERROR_USER_IS_NOT_THE_OWNER_DEVICE";
                             }
@@ -736,6 +736,41 @@ public class requestExecutionMethods {
         }
 
         return responseValue;
+    }
+
+    public static List getSensorTopicUID(String UID){
+
+        List Args = new ArrayList<String>();
+
+        try {
+
+            Class.forName(JDBC_DRIVER);
+            Connection Con = DriverManager.getConnection(
+                    DB_URL
+                    , USER
+                    , PASS
+            );
+
+            CallableStatement Stmt = Con.prepareCall("{call getSensorTopicUID(?,?,?)}");
+            Stmt.setString(1,UID);
+            Stmt.registerOutParameter (2, Types.VARCHAR);//oTopic
+            Stmt.registerOutParameter (3, Types.VARCHAR);//oUserName
+            Stmt.execute();
+
+            Args.add(Stmt.getString(2));
+            Args.add(Stmt.getString(3));
+
+            Con.close();
+
+        }catch(SQLException se){
+            //Handle errors for JDBC
+            se.printStackTrace();
+        }catch(Exception e) {
+            //Handle errors for Class.forName
+            e.printStackTrace();
+        }
+
+        return Args;
     }
 
 }
