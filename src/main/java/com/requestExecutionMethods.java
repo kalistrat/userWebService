@@ -1,9 +1,12 @@
 package com;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.security.Key;
 import java.security.KeyStore;
 import java.security.MessageDigest;
@@ -26,6 +29,8 @@ public class requestExecutionMethods {
 
     public static final String SERVPASS = "BHUerg567Sdc";
     public static final String SERVLOG = "userWeb045813";
+
+    public static final String CLIENT_CRT = "";
 
     public static void addNewUserFromSite(
             String iUserLogin
@@ -379,7 +384,7 @@ public class requestExecutionMethods {
                                         + "mqttHost : " + resp.mqttHost + ";\n"
                                         + "fromServerTopic : " + resp.mqttTopic + ";\n"
                                         + "toServerTopic : " + resp.mqttToTopic + ";\n"
-                                        + "certBase64 : " + getCertBase64(appPath);
+                                        + "certBase64 : " + encodeFileToBase64Binary(appPath);
 
                                 sendMessAgeToSubcribeServer(
                                         resp.leafId
@@ -399,7 +404,7 @@ public class requestExecutionMethods {
                                         + "temTopic : " + respMet.temMqttTopic + ";\n"
                                         + "humTopic : " + respMet.humMqttTopic + ";\n"
                                         + "lghtTopic : " + respMet.lghtMqttTopic + ";\n"
-                                        + "certBase64 : " + getCertBase64(appPath);
+                                        + "certBase64 : " + encodeFileToBase64Binary(appPath);
 
                                 sendMessAgeToSubcribeServer(
                                         respMet.leafId
@@ -439,7 +444,7 @@ public class requestExecutionMethods {
                                             + "mqttHost : " + resp.mqttHost + ";\n"
                                             + "fromServerTopic : " + resp.mqttTopic + ";\n"
                                             + "toServerTopic : " + resp.mqttToTopic + ";\n"
-                                            + "certBase64 : " + getCertBase64(appPath);
+                                            + "certBase64 : " + encodeFileToBase64Binary(appPath);
                                 } else {
                                     linkResult = "ERROR_USER_IS_NOT_THE_OWNER_DEVICE";
                                 }
@@ -460,7 +465,7 @@ public class requestExecutionMethods {
                                             + "temTopic : " + respMet.temMqttTopic + ";\n"
                                             + "humTopic : " + respMet.humMqttTopic + ";\n"
                                             + "lghtTopic : " + respMet.lghtMqttTopic + ";\n"
-                                            + "certBase64 : " + getCertBase64(appPath);
+                                            + "certBase64 : " + encodeFileToBase64Binary(appPath);
                                 } else {
                                     linkResult = "ERROR_USER_IS_NOT_THE_OWNER_DEVICE";
                                 }
@@ -605,27 +610,33 @@ public class requestExecutionMethods {
         return responseValue;
     }
 
-    public static String getCertBase64(String path){
-        String certKeyString = null;
-        try {
+//    public static String getCertBase64(String path){
+//        String certKeyString = null;
+//        try {
+//
+//            String decodedPath = URLDecoder.decode(path, "UTF-8");
+//            FileInputStream is = new FileInputStream(decodedPath + "serverkeystore.jks");
+//            KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
+//            keystore.load(is, "3PointShotMqtt".toCharArray());
+//            String alias = "testserver";
+//
+//            //Key key = keystore.getKey(alias, "3PointShotMqtt".toCharArray());
+//            Certificate cert = keystore.getCertificate(alias);
+//            // Get public key
+//            //PublicKey publicKey = cert.getPublicKey();
+//
+//            certKeyString = new String(Base64.getEncoder().encodeToString(cert.getEncoded()));
+//
+//        } catch (Exception e){
+//            e.printStackTrace();
+//        }
+//        return certKeyString;
+//    }
 
-            String decodedPath = URLDecoder.decode(path, "UTF-8");
-            FileInputStream is = new FileInputStream(decodedPath + "serverkeystore.jks");
-            KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-            keystore.load(is, "3PointShotMqtt".toCharArray());
-            String alias = "testserver";
-
-            //Key key = keystore.getKey(alias, "3PointShotMqtt".toCharArray());
-            Certificate cert = keystore.getCertificate(alias);
-            // Get public key
-            //PublicKey publicKey = cert.getPublicKey();
-
-            certKeyString = new String(Base64.getEncoder().encodeToString(cert.getEncoded()));
-
-        } catch (Exception e){
-            e.printStackTrace();
-        }
-        return certKeyString;
+    private static String encodeFileToBase64Binary(String path) throws IOException {
+        String fileName = URLDecoder.decode(path, "UTF-8") + "client.crt";
+        byte[] encoded = Base64.getEncoder().encode(Files.readAllBytes(new File(fileName).toPath()));
+        return new String(encoded, StandardCharsets.US_ASCII);
     }
 
     public static linkResponse getMqttConnetionArgsUID(String UID){
