@@ -429,7 +429,7 @@ public class requestExecutionMethods {
 
                         }
 
-                    } else {
+                    } else if (!getLeafType(UIDSList.get(UIDSList.size()-1),userLogin).equals("DROPPED")) {
                         //linkResult = "ERROR_DEVICE_ALREADY_ATTACHED";
                         String lastItemPreffix = UIDSList.get(UIDSList.size() - 1).substring(0, 3);
                         if (UIDSList.size() == 1) {
@@ -486,6 +486,8 @@ public class requestExecutionMethods {
                             }
                         }
 
+                    } else {
+                        linkResult = "ERROR_WRONG_TYPE_CONNECTED_DEVICE";
                     }
                 } else {
                     linkResult = "ERROR_WRONG_TYPE_CONNECTED_DEVICE";
